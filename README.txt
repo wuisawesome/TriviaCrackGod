@@ -1,6 +1,6 @@
 # TriviaCrackGod
 A Trivia Crack CLI that leverages the Trivia Crack protocol to help answer things quickly and accurately
-Created by wuisawesome and coocoohead39
+Created by wuisawesome and robertquitt
 
 To use TriviaCrackGod, you must first have the following packages:
   requests (http://docs.python-requests.org/en/latest/user/install/#install)
