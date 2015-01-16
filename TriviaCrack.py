@@ -124,6 +124,7 @@ def main():
         play_game(g,loop=True if (input("Answer all questions? (Y/N)")+" ")[0].lower()=='y' else False)
     elif g['type']=='DUEL_GAME':
         play_duel_game(g)
-        
+    else:
+        print("Sorry, that gamemode is not supported")
 while True:
     main()
