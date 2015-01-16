@@ -1,6 +1,7 @@
 #!/bin/python
 import requests
 import json
+import time
 from pprint import pprint
 
 user_id = "88610747"
@@ -43,6 +44,8 @@ def get_games():
             game['game_id'] = entry['id']
             game['user_id'] = opponent['id']
             games.append(game)
+        else:
+            print("Unrecognized games")
     return games
 
 
@@ -52,7 +55,7 @@ def show_games():
         pprint(game)
         print()
 
-def play_game(game):
+def play_game(game,loop=False):
     url = "https://api.preguntados.com/api/users/%s/games/%s" % (user_id,game['game_id'])
     h = dict(headers)
     response = requests.get(url,headers=h)
@@ -62,18 +65,36 @@ def play_game(game):
     p={"answers":[{"id":question['id'],"category":question['category'],"answer":question['correct_answer']}],"type":d['spins_data']['spins'][0]['type']}
     response = requests.post(url,headers=h,data=json.dumps(p))
     d = json.loads(response.text)
-    oldQuestion = question
     if 'spins_data' in d:
-        question = d['spins_data']['spins'][0]['questions'][0]['question']
+        pprint(question)
+        print("---------------------------------------")
+        if loop:
+            time.sleep(0.5) # Etersoft servers won't take the request too quickly
+            play_game(game,loop=True) #Im not sure if recursion is the best here
+        else:
+            return        
     else:
-        question = {0:"Last question answered. Congrats!"}
-    pprint(oldQuestion)
-    print("---------------------------------------")
-    pprint(question)
+        print("Last question answered. Congrats!")
+        return
+    
     #print("Question %s answered" % "correctly" if len(set(question.items()&oldQuestion.items()))!=0 else "incorrectly")
-
+    
+def create_random_duel():
+    language = "EN"
+    url = "https://api.preguntados.com/api/users/%s/rooms" % (user_id)
+    p={"language":language}
+    response = requests.post(url,headers=dict(headers),data=json.dumps(p))
+    d = json.loads(response.text)
+    if 'id' in d:
+        url = "https://api.preguntados.com/api/users/%s/rooms/%s" % (user_id,d['id'])
+        requests.get(url,headers=dict(headers))
+        response = requests.get(url,headers=dict(headers))
+        print('Created new duel game with random strangers. ')
+    else:
+        print('Something went wrong, no duel created.')
+        
 def play_duel_game(game):
-    finish_time = 0
+    finish_time = int(input("Solve time to display (in milliseconds): "))
     url = "https://api.preguntados.com/api/users/%s/games/%s" % (user_id,game['game_id'])
     h = dict(headers)
     response = requests.get(url,headers=h)
@@ -88,18 +109,21 @@ def play_duel_game(game):
     else:
         print('Challenge completed. Congrats.')
 
-while True:
+def main():
     games = get_games()
-    turn = [x for x in games if x['your_turn'] and x['game_status'] == 'ACTIVE']
+    turn = [x for x in games if x['your_turn']]
     i = 1
     print("Available Games: ")
     for game in turn:
-        print("("+str(i)+") " + str(game['username']) + " " + str(game['type']))
+        print("("+str(i)+") " + str(game['username']) + " " + str(game['type']) + " "+str(game['game_status']))
         i+=1
 
     i = int(input("Select a game to win: ")) - 1
     g = turn[i]
     if g['type']=='NORMAL':
-        play_game(g)
+        play_game(g,loop=True if (input("Answer all questions? (Y/N)")+" ")[0].lower()=='y' else False)
     elif g['type']=='DUEL_GAME':
         play_duel_game(g)
+        
+while True:
+    main()
